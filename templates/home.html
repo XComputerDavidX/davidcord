@@ -1,0 +1,53 @@
+<head>
+    <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    />
+    <title>{{ website_name }}</title>
+</head>
+<script>
+    function sendMessage() {
+        const message = document.querySelector(".message-input").value;
+        fetch("/api/send-message", {
+            method: "POST",
+            body: JSON.stringify({ message }),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const inputElement = document.querySelector(".message-input");
+        if (inputElement) {
+            inputElement.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    sendMessage();
+                    inputElement.value = "";
+                }
+            });
+        } else {
+            console.error('Element with class "message-input" not found.');
+        }
+    });
+</script>
+<body>
+    <h1>{{ website_name }}</h1>
+    <h2>Welcome, {{ username }}.</h2>
+    <div
+        hx-get="/api/get-messages"
+        hx-trigger="every 0.3s"
+        class="message-container"
+    >
+        <div class="message" hx-swap="outerHTML">
+            <span hx-get="get_user" class="message-user"></span>
+            <span class="message-text"></span>
+        </div>
+    </div>
+    <input
+        name="message"
+        placeholder="Send a message..."
+        class="message-input"
+    />
+</body>
