@@ -1,6 +1,9 @@
+{% if messages|length == 0 %}
+    <p>No messages yet.</p>
+{% endif %}
 {% for message in messages %}
 <div class="message">
-    <p class="author">Wazzup123</p>
+    <p class="author">{{ message["username"] }}</p>
     <p>{{ message["message"] }}</p>
 </div>
 {% endfor %}

@@ -7,16 +7,44 @@
     <title>{{ website_name }}</title>
 </head>
 <script>
+    window.onload = function () {
+        // if there is no username in the URL, set the username in the url to the innerhtml of the element with id welcome-username
+        if (!window.location.search.includes("username")) {
+            const username =
+                document.getElementById("profile-username").innerHTML;
+            window.history.pushState({ username }, "", `?username=${username}`);
+        }
+    };
+
     function sendMessage() {
         const message = document.querySelector(".message-input").value;
+        if (!message) {
+            return;
+        } else if (message.length > 2001) {
+            alert("Message is too long.");
+            return;
+        }
+        const username = new URLSearchParams(window.location.search).get(
+            "username",
+        );
+        const data = JSON.stringify({ message, username });
         fetch("/api/send-message", {
             method: "POST",
-            body: JSON.stringify({ message }),
+            body: data,
             headers: {
                 "Content-Type": "application/json",
             },
         });
+        setTimeout(() => {
+            const chat = document.querySelector(".chat");
+            chat.scrollTop = chat.scrollHeight;
+        }, 300);
     }
+
+    document.addEventListener("htmx:afterSwap", () => {
+        const chat = document.querySelector(".chat");
+        chat.scrollTop = chat.scrollHeight;
+    }); 
 
     document.addEventListener("DOMContentLoaded", () => {
         const inputElement = document.querySelector(".message-input");
@@ -30,24 +58,54 @@
         } else {
             console.error('Element with class "message-input" not found.');
         }
+
+        document.querySelector(".message-input").addEventListener("input", function () {
+        const characterCounter = document.getElementById("characterCounter");
+        var message_length_limit = {{ message_length_limit }};
+        characterCounter.classList.add("fade");
+        setTimeout(() => {
+            characterCounter.classList.remove("fade");
+        }, 250);
+        characterCounter.innerText = `${inputElement.value.length}/${message_length_limit}`;
+        if (inputElement.value.length > message_length_limit) {
+            characterCounter.classList.add("bad");
+        } else {
+            characterCounter.classList.remove("bad");
+        }
+        if ([42, 420, 666, 1337].includes(inputElement.value.length)) {
+            characterCounter.innerHTML += " 😎";
+        }
     });
+    });
+
+    // add event listener for when the text is changed
 </script>
 <body>
-    <h1>{{ website_name }}</h1>
-    <h2>Welcome, {{ username }}.</h2>
-    <div
-        hx-get="/api/get-messages"
-        hx-trigger="every 0.3s"
-        class="message-container"
-    >
-        <div class="message" hx-swap="outerHTML">
-            <span hx-get="get_user" class="message-user"></span>
-            <span class="message-text"></span>
+    <div class="sidebar">
+        <h1>{{ website_name }}</h1>
+        <div class="bottom-gizmo">
+            <p
+                style="display: inline;"
+            >
+                You are: <p style="display: inline; font-weight: bold;" id="profile-username">{{ username }}</p>
+            </p>
         </div>
     </div>
-    <input
-        name="message"
-        placeholder="Send a message..."
-        class="message-input"
-    />
+    <div class="main-content">
+        <div class="chat">
+            <div
+                hx-get="/api/get-messages"
+                hx-trigger="every 0.3s"
+                class="messages-container"
+            >
+                {{ htmx_messages|safe }}
+            </div>
+        </div>
+        <p id="characterCounter" class="monospace">0/{{ message_length_limit }}</p>
+        <input
+            name="message"
+            placeholder="Send a message..."
+            class="message-input"
+        />
+    </div>
 </body>
